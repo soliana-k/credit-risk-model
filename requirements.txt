@@ -10,4 +10,5 @@ fastapi>=0.100.0
 uvicorn>=0.23.0
 pydantic>=2.0.0
 pytest>=7.4.0
-flake8>=6.0.0   
+flake8>=6.0.0 
+xgboost  
