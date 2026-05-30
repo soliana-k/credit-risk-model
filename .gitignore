@@ -2,3 +2,5 @@ venv/
 *.env
 *.csv
 data/
+*.pyc
+__pycache__/
