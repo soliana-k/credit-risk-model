@@ -17,7 +17,7 @@ class EDA:
 
 
     def _get_distribution(self, skew_val, kurt_val):
-        """Automates the textual explanation of distribution shape."""
+        """Helper cunftion to automate the textual explanation of distribution shape."""
         insight = []
         if abs(skew_val) > self.SKEW_THRESHOLD:
             direction = "right" if skew_val > 0 else "left"
@@ -31,6 +31,17 @@ class EDA:
             insight.append(f"Platykurtic/Flat-tailed (Kurtosis: {kurt_val:.2f}).")
             
         return " ".join(insight)
+    
+    def _get_missing_advice(self, pct):
+        """Helper function for automated advice for missing data."""
+        if pct == 0:
+            return "No action needed."
+        elif pct < 5:
+            return "Impute (Mean/Median/Mode)."
+        elif pct < 30:
+            return "Consider advanced imputation or dropping."
+        else:
+            return "High missing rate: Consider dropping column or deep investigation."
 
 
     def data_overview(self):
@@ -106,19 +117,79 @@ class EDA:
 
 
     def correlation_analysis(self):
-        pass
+        logger.info('--- Calculating Correlation Matrix ---')
+        num_df = self.df.select_dtypes(include=['number'])
+        num_df=num_df.drop('CountryCode', axis=1)
+        corr_matrix = num_df.corr(method='pearson')
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(
+            corr_matrix, 
+            annot=True,        
+            cmap='coolwarm',   
+            fmt=".2f",         
+            linewidths=0.5
+        )
+        plt.title('Correlation Heatmap')
+        plt.tight_layout()
+        plt.show()
+        plt.close()
+        return corr_matrix
 
     def indentify_missing_vals(self):
-        pass
+        """Identify missing values to determine missing data and decide on appropriate imputation strategies."""
+        logger.info('--- Missing value identification ---')
+        missing_count = self.df.isnull().sum()
+        missing_pct = self.df.isnull().mean() * 100
+        missing_df = pd.DataFrame({
+            'Missing_Count': missing_count,
+            'Missing_Pct': missing_pct
+        })
+
+        problem_cols = missing_df[missing_df['Missing_Count'] > 0].copy()
+
+        if not problem_cols.empty:
+            problem_cols['Advice'] = problem_cols['Missing_Pct'].apply(self._get_missing_advice)
+            return problem_cols
+        else:
+            logger.info("Perfect! No missing data found.")
+            return None
+
 
     def outlier_detection(self):
-        pass
+        logger.info('--- Running Outlier Analysis ---')
+        num_cols = self.df.select_dtypes(include=['number']).columns
+        outlier_report = {}
+
+        for col in num_cols:
+            Q1 = self.df[col].quantile(0.25)
+            Q3 = self.df[col].quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound, upper_bound = Q1 - 1.5 * IQR, Q3 + 1.5 * IQR
+    
+            outlier_count = ((self.df[col] < lower_bound) | (self.df[col] > upper_bound)).sum()
+            outlier_report[col] = {'Count': outlier_count, 'Percentage': round((outlier_count / len(self.df)) * 100, 2)}
+
+            plt.figure(figsize=(8, 3))
+            sns.boxplot(x=self.df[col], color='salmon')
+            plt.title(f'Distribution & Outliers: {col}')
+            sns.despine()
+            plt.tight_layout()
+            plt.show()
+            plt.close()
+            
+        return pd.DataFrame(outlier_report).T
+
 
     def run(self):
         self.results['overview']=self.data_overview()
         self.results['summary']=self.data_summary()
+        self.results['missing']=self.indentify_missing_vals()
         self.numerical_cols_distribution()
         self.categroical_cols_distribution()
+        self.results['correlation']=self.correlation_analysis()
+        self.correlation_analysis()
+        self.results['outliers']=self.outlier_detection()
+        self.outlier_detection()
         logger.info("EDA process complete.")
         return self.results
     
@@ -137,5 +208,13 @@ class EDA:
         
         print("\n=== CATEGORICAL MODES ===")
         print(results['categorical_modes'])
+
+        print("\n=== MISSING DATA REPORT ===")
+        missing_report = self.results.get('missing')
+        
+        if missing_report is not None:
+            print(missing_report)
+        else:
+            print("Status: Clean dataset. No missing values identified.")
 
 
