@@ -3,17 +3,17 @@
   "kurt_threshold": 3.0,
   "plot_dpi": 300,
   "save_plots": true,
-  "output_dir": "eda_outputs",
+  "output_dir": "outputs",
   "sample_size": null,
   "random_seed": 42,
   "include_plots": true,
   "figsize_numerical": [
-    8,
-    4
+    9,
+    5
   ],
   "figsize_categorical": [
-    10,
-    5
+    11,
+    6
   ],
   "figsize_heatmap": [
     12,
