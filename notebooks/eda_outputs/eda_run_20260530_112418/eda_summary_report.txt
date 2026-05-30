@@ -1,0 +1,34 @@
+=== EDA SUMMARY REPORT ===
+
+Generated: 2026-05-30 11:24:49.790707
+Run ID: eda_run_20260530_112449
+
+Dataset Shape     : 95662 rows × 16 columns
+Memory Usage      : 74.51 MB
+
+=== NUMERIC SUMMARY ===
+                      mean  median          std     skew   kurtosis                                                        insight
+CountryCode       256.0000   256.0       0.0000   0.0000     0.0000                                                      Symmetric
+Amount           6717.8464  1000.0  123306.7972  51.0985  3363.1277  Highly right-skewed (skew=51.10) | Leptokurtic (kurt=3363.13)
+Value            9900.5839  1000.0  123122.0878  51.2911  3378.0693  Highly right-skewed (skew=51.29) | Leptokurtic (kurt=3378.07)
+PricingStrategy     2.2560     2.0       0.7329   1.6591     2.0875                                Highly right-skewed (skew=1.66)
+FraudResult         0.0020     0.0       0.0449  22.1963   490.6858   Highly right-skewed (skew=22.20) | Leptokurtic (kurt=490.69)
+
+=== MISSING VALUES ===
+No missing values found.
+
+=== OUTLIER REPORT ===
+                 outlier_count  outlier_pct
+CountryCode                0.0         0.00
+Amount                 24441.0        25.55
+Value                   9021.0         9.43
+PricingStrategy        15814.0        16.53
+FraudResult              193.0         0.20
+
+=== CORRELATION MATRIX (Top 10 features) ===
+Amount             0.65225
+Value              0.64350
+FraudResult        0.53950
+PricingStrategy    0.27825
+
+Full plots and artifacts saved in: eda_outputs\eda_run_20260530_112418

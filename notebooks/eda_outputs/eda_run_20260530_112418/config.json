@@ -1,0 +1,22 @@
+{
+  "skew_threshold": 1.0,
+  "kurt_threshold": 3.0,
+  "plot_dpi": 300,
+  "save_plots": true,
+  "output_dir": "eda_outputs",
+  "sample_size": null,
+  "random_seed": 42,
+  "include_plots": true,
+  "figsize_numerical": [
+    8,
+    4
+  ],
+  "figsize_categorical": [
+    10,
+    5
+  ],
+  "figsize_heatmap": [
+    12,
+    10
+  ]
+}
