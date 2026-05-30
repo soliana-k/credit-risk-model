@@ -1,7 +1,7 @@
 === EDA SUMMARY REPORT ===
 
-Generated: 2026-05-30 11:24:49.790707
-Run ID: eda_run_20260530_112449
+Generated: 2026-05-30 12:38:10.085358
+Run ID: eda_run_20260530_123810
 
 Dataset Shape     : 95662 rows × 16 columns
 Memory Usage      : 74.51 MB
@@ -31,4 +31,4 @@ Value              0.64350
 FraudResult        0.53950
 PricingStrategy    0.27825
 
-Full plots and artifacts saved in: eda_outputs\eda_run_20260530_112418
+Full plots and artifacts saved in: c:\Users\Hello\Desktop\kaim\credit-risk-model\outputs\eda_run_20260530_123727

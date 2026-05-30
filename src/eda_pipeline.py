@@ -18,7 +18,7 @@ class EDAConfig:
     kurt_threshold: float = 3.0
     plot_dpi: int = 300
     save_plots: bool = True
-    output_dir: str = "eda_outputs"
+    output_dir: str = "outputs"
     sample_size: Optional[int] = None
     random_seed: int = 42
     include_plots: bool = True
@@ -38,7 +38,7 @@ class EDAPipeline:
         self.results: Dict = {}
         self.run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        self.output_path = Path(self.config.output_dir) / f"eda_run_{self.run_timestamp}"
+        self.output_path = self._get_project_root() / self.config.output_dir / f"eda_run_{self.run_timestamp}"
         self.output_path.mkdir(parents=True, exist_ok=True)
         
         self._visualizer = self._Visualizer(self.config, self.output_path)
@@ -46,7 +46,16 @@ class EDAPipeline:
         
         logger.info(f"EDAPipeline initialized. Output directory: {self.output_path}")
 
-
+    def _get_project_root(self) -> Path:
+        """Find project root reliably even when running from notebooks/ folder"""
+        current_path = Path.cwd()
+        for _ in range(5):  
+            if (current_path / "src").exists() or (current_path / "notebooks").exists() or (current_path / "README.md").exists():
+                return current_path
+            current_path = current_path.parent
+        
+        return Path.cwd()
+    
     def load_data(self, df: pd.DataFrame) -> 'EDAPipeline':
         self.df = df.copy()
         logger.info(f"✅ Data loaded: {self.df.shape[0]:,} rows × {self.df.shape[1]} columns")
