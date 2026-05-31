@@ -119,7 +119,8 @@ from eda_pipeline import EDAPipeline, EDAConfig
 config = EDAConfig(
     sample_size=None,      # Set number for large data, leave None for all
     save_plots=True,
-    include_plots=True
+    include_plots=True,
+    verbose=True      # to display inside the cells
 )
 
 # Run pipeline
