@@ -23,6 +23,8 @@ This project implements a **clean, reusable, and well-architectured Exploratory 
 
 The pipeline was built to fully satisfy the given assignment requirements while maintaining production-grade code quality, reproducibility, and scalability.
 
+The dataset contains transaction-level records from the Xente eCommerce platform, where each row represents a single customer transaction. The fields capture the who (customer, account, subscription identifiers), the what (product, category, channel, pricing strategy), and the how much / when (amount, value, transaction timestamp), along with a binary fraud flag. It can be found on Kaggle - https://www.kaggle.com/datasets/atwine/xente-challenge
+
 ---
 
 ## Task Requirements & Coverage

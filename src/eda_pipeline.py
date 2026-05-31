@@ -133,7 +133,6 @@ class EDAPipeline:
             print(self.results['missing'])
         else:
             print("No missing values found.")
-
         print("\nOUTLIER DETECTION")
         print(self.results['outliers'])
 
