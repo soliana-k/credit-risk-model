@@ -1,7 +1,7 @@
 === EDA SUMMARY REPORT ===
 
-Generated: 2026-05-30 12:38:10.085358
-Run ID: eda_run_20260530_123810
+Generated: 2026-05-31 20:32:48.721594
+Run ID: eda_run_20260531_203248
 
 Dataset Shape     : 95662 rows × 16 columns
 Memory Usage      : 74.51 MB
@@ -13,6 +13,19 @@ Amount           6717.8464  1000.0  123306.7972  51.0985  3363.1277  Highly righ
 Value            9900.5839  1000.0  123122.0878  51.2911  3378.0693  Highly right-skewed (skew=51.29) | Leptokurtic (kurt=3378.07)
 PricingStrategy     2.2560     2.0       0.7329   1.6591     2.0875                                Highly right-skewed (skew=1.66)
 FraudResult         0.0020     0.0       0.0449  22.1963   490.6858   Highly right-skewed (skew=22.20) | Leptokurtic (kurt=490.69)
+
+=== CATEGORICAL SUMMARY ===
+TransactionId                TransactionId_1
+BatchId                        BatchId_67019
+AccountId                     AccountId_4841
+SubscriptionId           SubscriptionId_3829
+CustomerId                   CustomerId_7343
+CurrencyCode                             UGX
+ProviderId                      ProviderId_4
+ProductId                        ProductId_6
+ProductCategory           financial_services
+ChannelId                        ChannelId_3
+TransactionStartTime    2018-12-24T16:30:13Z
 
 === MISSING VALUES ===
 No missing values found.
@@ -31,4 +44,4 @@ Value              0.64350
 FraudResult        0.53950
 PricingStrategy    0.27825
 
-Full plots and artifacts saved in: c:\Users\Hello\Desktop\kaim\credit-risk-model\outputs\eda_run_20260530_123727
+Full plots and artifacts saved in: c:\Users\Hello\Desktop\kaim\credit-risk-model\outputs\eda_run_20260531_203220

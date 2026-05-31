@@ -18,5 +18,6 @@
   "figsize_heatmap": [
     12,
     10
-  ]
+  ],
+  "verbose": true
 }

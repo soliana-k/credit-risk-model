@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class EDAConfig:
+    """Configuration class for the EDA Pipeline."""
     skew_threshold: float = 1.0
     kurt_threshold: float = 3.0
     plot_dpi: int = 300
@@ -25,11 +26,18 @@ class EDAConfig:
     figsize_numerical: tuple = (9, 5)
     figsize_categorical: tuple = (11, 6)
     figsize_heatmap: tuple = (12, 10)
+    verbose: bool = True
 
 
 class EDAPipeline:
     """
-    Clean Pipeline-as-a-Class architecture for EDA
+    Clean, modular, and production-ready EDA Pipeline for credit risk analysis.
+    
+    Features:
+    - Method chaining support
+    - Configurable via EDAConfig dataclass
+    - Automatic artifact saving with timestamps
+    - Separation of concerns (Visualizer, Reporter)
     """
 
     def __init__(self, config: Optional[EDAConfig] = None):
@@ -57,42 +65,84 @@ class EDAPipeline:
         return Path.cwd()
     
     def load_data(self, df: pd.DataFrame) -> 'EDAPipeline':
+        """Load data into the pipeline."""
+        if df is None or df.empty:
+            raise ValueError("Input DataFrame is empty or None.")
         self.df = df.copy()
         logger.info(f"✅ Data loaded: {self.df.shape[0]:,} rows × {self.df.shape[1]} columns")
         return self
 
     def run(self) -> Dict:
+        """Execute the full EDA pipeline."""
         if self.df is None:
             raise ValueError("No data loaded. Call .load_data(df) first.")
 
         logger.info(" Starting EDA Pipeline...")
+        try:
+            self._apply_sampling()
 
-        self._apply_sampling()
+            self.results = {
+                "overview": self._data_overview(),
+                "summary": self._data_summary(),
+                "missing": self._identify_missing_values(),
+                "outliers": self._detect_outliers(),
+                "correlation": self._correlation_analysis(),
+            }
+            if self.config.verbose:
+                self._display_key_findings()
 
-        self.results = {
-            "overview": self._data_overview(),
-            "summary": self._data_summary(),
-            "missing": self._identify_missing_values(),
-            "outliers": self._detect_outliers(),
-            "correlation": self._correlation_analysis(),
-        }
 
-        if self.config.include_plots:
-            self._generate_visualizations()
+            if self.config.include_plots:
+                self._generate_visualizations()
 
-        self._reporter.generate_summary_report(self.results, self.df)
-        self.save_config()
+            self._reporter.generate_summary_report(self.results, self.df)
+            self.save_config()
 
-        logger.info(" EDA Pipeline completed successfully!")
-        return self.results
+            logger.info(" EDA Pipeline completed successfully!")
+            return self.results
+        except Exception as e:
+            logger.error(f" EDA Pipeline failed: {str(e)}")
+            raise
 
     def save_config(self):
+        """Save configuration for reproducibility."""
         config_path = self.output_path / "config.json"
         with open(config_path, 'w') as f:
             json.dump(asdict(self.config), f, indent=2, default=str)
         logger.info(f" Configuration saved: {config_path}")
 
     # ===================== PRIVATE METHODS =====================
+
+    def _display_key_findings(self):
+        """Prints all required rubric items visibly in notebook"""
+        print("\n" + "="*60)
+        print("\t\tDATA OVERVIEW")
+        print("="*60)
+        ov = self.results['overview']
+        print(f"Dataset Shape     : {ov['rows']} rows × {ov['cols']} columns")
+        print(f"Memory Usage      : {ov['memory_usage_mb']} MB\n")
+
+        print("\nSUMMARY STATISTICS (Numerical Features) \n")
+        print(self.results['summary']['numeric_summary'])
+
+        print("\nSUMMARY STATISTICS (Categorical Features) Most Frequent\n")
+        print(self.results['summary']['categorical_modes'])
+
+        print("\nMISSING VALUES")
+        if self.results['missing'] is not None:
+            print(self.results['missing'])
+        else:
+            print("No missing values found.")
+
+        print("\nOUTLIER DETECTION")
+        print(self.results['outliers'])
+
+        print("\nCORRELATION MATRIX (Top 10 strongest) --- Mean Absolute Correlations")
+        corr = self.results['correlation']
+        print(corr.abs().mean().sort_values(ascending=False).head(10))
+
+        print("\n" + "="*60)
+        
 
     def _apply_sampling(self):
         if self.config.sample_size and len(self.df) > self.config.sample_size:
@@ -171,8 +221,7 @@ class EDAPipeline:
 
     def _correlation_analysis(self):
         num_df = self.df.select_dtypes(include=['number'])
-        if 'CountryCode' in num_df.columns:
-            num_df = num_df.drop(columns=['CountryCode'])
+        num_df = num_df.loc[:, num_df.nunique() > 1]
         return num_df.corr(method='pearson').round(3)
 
     def _generate_visualizations(self):
@@ -222,6 +271,7 @@ class EDAPipeline:
 
         def plot_correlation_heatmap(self, df: pd.DataFrame):
             num_df = df.select_dtypes(include=['number'])
+            num_df = num_df.loc[:, num_df.nunique() > 1]
             if len(num_df.columns) < 2:
                 return
             corr = num_df.corr()
@@ -259,6 +309,9 @@ class EDAPipeline:
 
                 f.write("=== NUMERIC SUMMARY ===\n")
                 f.write(results['summary']['numeric_summary'].to_string() + "\n\n")
+
+                f.write("=== CATEGORICAL SUMMARY ===\n")
+                f.write(results['summary']['categorical_modes'].to_string() + "\n\n")
 
                 f.write("=== MISSING VALUES ===\n")
                 if results['missing'] is not None:

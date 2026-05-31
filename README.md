@@ -9,6 +9,10 @@
 #### 3. What are the key trade-offs between a simple, interpretable model (e.g., Logistic Regression with WoE) and a high-performance model (e.g., Gradient Boosting) in a regulated financial context?
 - In choosing between a simple, interpretable model (Logistic Regression with WoE) and a high-performance model (Gradient Boosting), there is a fundamental trade-off between predictive precision and regulatory transparency. While Gradient Boosting offers superior performance by capturing complex, non-linear data patterns, its black-box nature poses significant hurdles for the rigorous, documentable audit trails required by Basel II standards. Conversely, Logistic Regression provides a transparent, monotonic relationship between inputs and outcomes, aligning with the regulatory need for explainable AI. the strategy favors an initial focus on interpretable models to satisfy compliance requirements, with high-performance models utilized as secondary benchmarks to measure the accuracy gap and justify future model complexity.
 
+
+**Strategic Choice for This Project**  
+Given the regulatory environment at Bati Bank, I prioritize **interpretable models** (Logistic Regression with WoE encoding) as the primary approach to ensure auditability and Basel II compliance, while using Gradient Boosting models as benchmarks to quantify the performance-interpretability trade-off.
+
 --- 
 
 # EDA Pipeline for Credit Risk Modeling
@@ -37,6 +41,16 @@ The assignment required the following:
 
 **All 7 requirements are fully implemented.**
 
+### EDA Coverage Summary (All Requirements Met)
+
+- **Data Overview**: 95,662 rows × 16 columns, memory usage, dtypes reviewed
+- **Summary Statistics**: Mean, median, std, skewness, kurtosis with automated insights
+- **Distribution Analysis**: Histograms (numerical) + count plots (categorical)
+- **Correlation Analysis**: Pearson matrix + heatmap (Amount-Value correlation ~0.99)
+- **Missing Values**: Zero missing values found
+- **Outlier Detection**: IQR method + box plots (Amount: 25.55% outliers)
+- **Key Insights**: 5 detailed insights guiding feature engineering (skewness, imbalance, multicollinearity, etc.)
+
 ---
 
 ## Architecture Highlights
@@ -48,6 +62,8 @@ The assignment required the following:
 - Method chaining support (`load_data().run()`)
 - Separation of concerns (Analysis, Visualization, Reporting)
 - Works well in **Jupyter Notebooks** (plots displayed inline + saved)
+
+EDA outputs are timestamped for reproducibility. Summary reports and configuration files are committed to Git, while generated plots are gitignored due to file size
 
 ---
 

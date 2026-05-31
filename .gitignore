@@ -4,3 +4,8 @@ venv/
 data/
 *.pyc
 __pycache__/
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+*.png
+
