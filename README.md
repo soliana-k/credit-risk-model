@@ -15,7 +15,7 @@ Given the regulatory environment at Bati Bank, I prioritize **interpretable mode
 
 ---
 
- #### 🏛️ Model Governance & Auditability
+ ####  Model Governance & Auditability
 
  In alignment with Basel II regulatory requirements, this project implements the following governance standards:
  * **Reproducibility:** Every analysis run is auto-timestamped and saved to a dedicated `outputs/` subdirectory, containing the exact `config.json` used for the run.
