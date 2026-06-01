@@ -14,7 +14,22 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class EDAConfig:
-    """Configuration class for the EDA Pipeline."""
+    """Configuration object for the EDA Pipeline.
+
+    Attributes:
+        skew_threshold (float): Threshold for flagging skewness.
+        kurt_threshold (float): Threshold for flagging kurtosis.
+        plot_dpi (int): Resolution for saved plots.
+        save_plots (bool): Whether to save plots to disk.
+        output_dir (str): Relative directory path for outputs.
+        sample_size (Optional[int]): Rows to sample; if None, uses full data.
+        random_seed (int): Seed for reproducibility.
+        include_plots (bool): Whether to generate plots during execution.
+        figsize_numerical (tuple): Tuple for numerical plot dimensions.
+        figsize_categorical (tuple): Tuple for categorical plot dimensions.
+        figsize_heatmap (tuple): Tuple for heatmap dimensions.
+        verbose (bool): Whether to print findings to console.
+    """
     skew_threshold: float = 1.0
     kurt_threshold: float = 3.0
     plot_dpi: int = 300
@@ -41,6 +56,11 @@ class EDAPipeline:
     """
 
     def __init__(self, config: Optional[EDAConfig] = None):
+        """Initializes the pipeline with configuration and setup paths.
+
+        Args:
+            config (Optional[EDAConfig]): Custom configuration object.
+        """
         self.config = config or EDAConfig()
         self.df: Optional[pd.DataFrame] = None
         self.results: Dict = {}
@@ -55,7 +75,11 @@ class EDAPipeline:
         logger.info(f"EDAPipeline initialized. Output directory: {self.output_path}")
 
     def _get_project_root(self) -> Path:
-        """Find project root reliably even when running from notebooks/ folder"""
+        """Locates the project root directory by traversing upwards.
+
+        Returns:
+            Path: The root directory path.
+        """
         current_path = Path.cwd()
         for _ in range(5):  
             if (current_path / "src").exists() or (current_path / "notebooks").exists() or (current_path / "README.md").exists():
@@ -65,7 +89,17 @@ class EDAPipeline:
         return Path.cwd()
     
     def load_data(self, df: pd.DataFrame) -> 'EDAPipeline':
-        """Load data into the pipeline."""
+        """Loads and validates input data.
+
+        Args:
+            df (pd.DataFrame): Data to analyze.
+
+        Returns:
+            EDAPipeline: Self for method chaining.
+
+        Raises:
+            ValueError: If input is None or empty.
+        """
         if df is None or df.empty:
             raise ValueError("Input DataFrame is empty or None.")
         self.df = df.copy()
@@ -73,7 +107,11 @@ class EDAPipeline:
         return self
 
     def run(self) -> Dict:
-        """Execute the full EDA pipeline."""
+        """Executes the full EDA process and generates artifacts.
+
+        Returns:
+            Dict[str, Any]: Compiled results of the EDA process.
+        """
         if self.df is None:
             raise ValueError("No data loaded. Call .load_data(df) first.")
 
@@ -104,8 +142,8 @@ class EDAPipeline:
             logger.error(f" EDA Pipeline failed: {str(e)}")
             raise
 
-    def save_config(self):
-        """Save configuration for reproducibility."""
+    def save_config(self) -> None:
+        """Saves current configuration to a JSON file for reproducibility."""
         config_path = self.output_path / "config.json"
         with open(config_path, 'w') as f:
             json.dump(asdict(self.config), f, indent=2, default=str)
@@ -113,7 +151,7 @@ class EDAPipeline:
 
     # ===================== PRIVATE METHODS =====================
 
-    def _display_key_findings(self):
+    def _display_key_findings(self) -> None:
         """Prints all required rubric items visibly in notebook"""
         print("\n" + "="*60)
         print("\t\tDATA OVERVIEW")
@@ -143,13 +181,19 @@ class EDAPipeline:
         print("\n" + "="*60)
         
 
-    def _apply_sampling(self):
+    def _apply_sampling(self) -> None:
+        """Samples the internal DataFrame based on config settings."""
         if self.config.sample_size and len(self.df) > self.config.sample_size:
             self.df = self.df.sample(n=self.config.sample_size, 
                                    random_state=self.config.random_seed).reset_index(drop=True)
             logger.info(f" Sampled to {self.config.sample_size:,} rows")
 
     def _data_overview(self) -> Dict:
+        """Provides basic dataset dimensions and memory info.
+
+        Returns:
+            Dict[str, Any]: Dictionary containing shape and memory details.
+        """
         return {
             "rows": self.df.shape[0],
             "cols": self.df.shape[1],
@@ -232,7 +276,8 @@ class EDAPipeline:
 
 
     class _Visualizer:
-        def __init__(self, config: EDAConfig, output_path: Path):
+        """Helper class for generating and saving plots."""
+        def __init__(self, config: EDAConfig, output_path: Path) -> None:
             self.config = config
             self.plot_path = output_path / "plots"
             self.plot_path.mkdir(exist_ok=True)
@@ -243,7 +288,12 @@ class EDAPipeline:
             plt.show()         
             plt.close()
 
-        def plot_numerical(self, df: pd.DataFrame):
+        def plot_numerical(self, df: pd.DataFrame) -> None:
+            """Generates distribution plots for numeric features.
+
+            Args:
+                df (pd.DataFrame): The source dataframe.
+            """
             for col in df.select_dtypes(include=['number']).columns:
                 plt.figure(figsize=self.config.figsize_numerical)
                 if df[col].nunique() <= 10:
