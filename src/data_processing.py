@@ -1,100 +1,3 @@
-# # import pandas as pd
-# # import logging
-# # from sklearn.preprocessing import StandardScaler, OneHotEncoder, MinMaxScaler
-# # from sklearn.impute import SimpleImputer
-
-# # # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-# # # logger = logging.getLogger(__name__)
-
-# # # class Preprocessing:
-# # #     def __init__(self, df:pd.DataFrame):
-# # #         self.df=df
-        
-
-# # #     def transaction_aggregate_features(self):
-# # #         self.df['TotalTransactionAmount'] = self.df.groupby('CustomerId')['Amount'].transform('sum')
-# # #         self.df['AverageTransactionAmount'] = self.df.groupby('CustomerId')['Amount'].transform('mean')
-# # #         self.df['TransactionCount'] = self.df.groupby('CustomerId')['Amount'].transform('count')
-# # #         self.df['TransactionVariability'] = self.df.groupby('CustomerId')['Amount'].transform('std')
-# # #         logger.info('Successfully engineered aggregate features!')
-# # #         return self.df
-    
-# # #     def time_features(self):
-# # #         try:
-# # #             time_col = pd.to_datetime(self.df['TransactionStartTime'])
-# # #             self.df['TransactionHour']=time_col.dt.hour
-# # #             self.df['TransactionDay']=time_col.dt.day
-# # #             self.df['TransactionMonth']=time_col.dt.month
-# # #             self.df['TransactionYear']=time_col.dt.year
-# # #             logger.info('successfully completed')
-# # #             return self.df
-
-# # #         except Exception as e:
-# # #             logger.warning(f"Unexpected processing error: {e}")
-# # #             raise
-
-# # #     def category_encoding(self):
-# # #         try:
-
-# # #             pass
-# # #         except Exception as e:
-# # #             logger.warning(f'the exception {e}')
-# # #             raise
-
-
-
-
-# # import pandas as pd
-# # from sklearn.base import BaseEstimator, TransformerMixin
-# # from xverse.transformer import WOE
-# # from sklearn.pipeline import Pipeline
-
-# # class TransactionAggregator(BaseEstimator, TransformerMixin):
-# #     def fit(self, X, y=None):
-# #         return self
-
-# #     def transform(self, X):
-# #         X = X.copy()
-# #         X['TotalTransactionAmount'] = X.groupby('CustomerId')['Amount'].transform('sum')
-# #         X['AverageTransactionAmount'] = X.groupby('CustomerId')['Amount'].transform('mean')
-# #         X['TransactionCount'] = X.groupby('CustomerId')['Amount'].transform('count')
-# #         X['TransactionVariability'] = X.groupby('CustomerId')['Amount'].transform('std')
-# #         return X
-
-# # class TimeFeatureExtractor(BaseEstimator, TransformerMixin):
-# #     def fit(self, X, y=None):
-# #         return self
-
-# #     def transform(self, X):
-# #         X = X.copy()
-# #         time_col = pd.to_datetime(X['TransactionStartTime'])
-# #         X['TransactionHour'] = time_col.dt.hour
-# #         X['TransactionDay'] = time_col.dt.day
-# #         X['TransactionMonth'] = time_col.dt.month
-# #         X['TransactionYear'] = time_col.dt.year
-# #         return X
-    
-# # class Encoder(BaseEstimator, TransformerMixin):
-# #     def __init__(self, columns):
-# #         self.columns = columns
-# #         self.encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
-
-# #     def fit(self, X, y=None):
-# #         self.encoder.fit(X[self.columns])
-# #         return self
-    
-# #     def transform(self, X):
-# #         X = X.copy()
-# #         encoded_data = self.encoder.transform(X[self.columns])
-# #         encoded_df = pd.DataFrame(encoded_data, columns=self.encoder.get_feature_names_out(self.columns))
-# #         X = X.drop(columns=self.columns).reset_index(drop=True)
-# #         return pd.concat([X, encoded_df], axis=1)
-
-
-    
-
-
-
 import pandas as pd
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -102,59 +5,53 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.cluster import KMeans
-from xverse.transformer import WOE
 
 
 
 
 class RFMClusterer(BaseEstimator, TransformerMixin):
-    """Task 4: Creates is_high_risk using RFM + KMeans"""
+    """Task 4: Creates is_high_risk target using RFM + KMeans clustering"""
     def __init__(self, n_clusters=3, random_state=42):
         self.n_clusters = n_clusters
         self.random_state = random_state
-        self.kmeans = None
+        self.kmeans = KMeans(n_clusters=self.n_clusters, random_state=self.random_state)
         self.scaler = StandardScaler()
         self.high_risk_cluster = None
 
-    def fit(self, X, y=None):
-        rfm = X.groupby('CustomerId').agg({
-            'TransactionStartTime': 'max',     
-            'TransactionId': 'count',           
-            'Amount': 'sum'                     
-        }).reset_index()
-
-        rfm.columns = ['CustomerId', 'Recency', 'Frequency', 'Monetary']
-        rfm['Recency'] = (pd.to_datetime(X['TransactionStartTime']).max() - 
-                         pd.to_datetime(rfm['Recency'])).dt.days
-
-        rfm_scaled = self.scaler.fit_transform(rfm[['Recency', 'Frequency', 'Monetary']])
-        self.kmeans = KMeans(n_clusters=self.n_clusters, random_state=self.random_state)
-        self.kmeans.fit(rfm_scaled)
-
-        centers = pd.DataFrame(self.kmeans.cluster_centers_, 
-                             columns=['Recency', 'Frequency', 'Monetary'])
-        self.high_risk_cluster = centers['Frequency'].idxmin()
-        return self
-
-    def transform(self, X):
-        X = X.copy()
+    def _calculate_rfm(self, X):
         rfm = X.groupby('CustomerId').agg({
             'TransactionStartTime': 'max',
             'TransactionId': 'count',
             'Amount': 'sum'
         }).reset_index()
-
-        rfm.columns = ['CustomerId', 'Recency', 'Frequency', 'Monetary']
-        rfm['Recency'] = (pd.to_datetime(X['TransactionStartTime']).max() - 
-                         pd.to_datetime(rfm['Recency'])).dt.days
-
-        rfm_scaled = self.scaler.transform(rfm[['Recency', 'Frequency', 'Monetary']])
-        clusters = self.kmeans.predict(rfm_scaled)
         
-        rfm['is_high_risk'] = (clusters == self.high_risk_cluster).astype(int)
-        X = X.merge(rfm[['CustomerId', 'is_high_risk']], on='CustomerId', how='left')
-        return X
+        rfm.columns = ['CustomerId', 'Recency', 'Frequency', 'Monetary']
+        
+        
+        snapshot_date = pd.to_datetime(X['TransactionStartTime']).max()
+        rfm['Recency'] = (snapshot_date - pd.to_datetime(rfm['Recency'])).dt.days
+        return rfm
 
+    def fit(self, X, y=None):
+        rfm = self._calculate_rfm(X)
+    
+        rfm_scaled = self.scaler.fit_transform(rfm[['Recency', 'Frequency', 'Monetary']])
+        self.kmeans.fit(rfm_scaled)
+        centers = pd.DataFrame(self.kmeans.cluster_centers_, 
+                               columns=['Recency', 'Frequency', 'Monetary'])
+
+        self.high_risk_cluster = centers['Frequency'].idxmin()
+        
+        return self
+
+    def transform(self, X):
+        X = X.copy()
+        rfm = self._calculate_rfm(X)
+        rfm_scaled = self.scaler.transform(rfm[['Recency', 'Frequency', 'Monetary']])
+        
+        clusters = self.kmeans.predict(rfm_scaled)
+        rfm['is_high_risk'] = (clusters == self.high_risk_cluster).astype(int)
+        return X.merge(rfm[['CustomerId', 'is_high_risk']], on='CustomerId', how='left')
 
 class Aggregator(BaseEstimator, TransformerMixin):
     """Task 3: Aggregate Features"""
@@ -325,6 +222,7 @@ def process_data(df: pd.DataFrame):
     rfm_preprocessor = RFMClusterer()
     X_rfm = rfm_preprocessor.fit_transform(df)
     y = X_rfm['is_high_risk']
-    X_final = pipeline.fit_transform(X_rfm, y)
+    X_features = X_rfm.drop(columns=['is_high_risk'])
+    X_final = pipeline.fit_transform(X_features, y)
     
     return X_final, y
