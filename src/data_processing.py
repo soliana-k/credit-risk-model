@@ -1,58 +1,166 @@
-import pandas as pd
-import logging
-from sklearn.preprocessing import StandardScaler, OneHotEncoder, MinMaxScaler
-from sklearn.impute import SimpleImputer
+# # import pandas as pd
+# # import logging
+# # from sklearn.preprocessing import StandardScaler, OneHotEncoder, MinMaxScaler
+# # from sklearn.impute import SimpleImputer
 
-# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-# logger = logging.getLogger(__name__)
+# # # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# # # logger = logging.getLogger(__name__)
 
-# class Preprocessing:
-#     def __init__(self, df:pd.DataFrame):
-#         self.df=df
+# # # class Preprocessing:
+# # #     def __init__(self, df:pd.DataFrame):
+# # #         self.df=df
         
 
-#     def transaction_aggregate_features(self):
-#         self.df['TotalTransactionAmount'] = self.df.groupby('CustomerId')['Amount'].transform('sum')
-#         self.df['AverageTransactionAmount'] = self.df.groupby('CustomerId')['Amount'].transform('mean')
-#         self.df['TransactionCount'] = self.df.groupby('CustomerId')['Amount'].transform('count')
-#         self.df['TransactionVariability'] = self.df.groupby('CustomerId')['Amount'].transform('std')
-#         logger.info('Successfully engineered aggregate features!')
-#         return self.df
+# # #     def transaction_aggregate_features(self):
+# # #         self.df['TotalTransactionAmount'] = self.df.groupby('CustomerId')['Amount'].transform('sum')
+# # #         self.df['AverageTransactionAmount'] = self.df.groupby('CustomerId')['Amount'].transform('mean')
+# # #         self.df['TransactionCount'] = self.df.groupby('CustomerId')['Amount'].transform('count')
+# # #         self.df['TransactionVariability'] = self.df.groupby('CustomerId')['Amount'].transform('std')
+# # #         logger.info('Successfully engineered aggregate features!')
+# # #         return self.df
     
-#     def time_features(self):
-#         try:
-#             time_col = pd.to_datetime(self.df['TransactionStartTime'])
-#             self.df['TransactionHour']=time_col.dt.hour
-#             self.df['TransactionDay']=time_col.dt.day
-#             self.df['TransactionMonth']=time_col.dt.month
-#             self.df['TransactionYear']=time_col.dt.year
-#             logger.info('successfully completed')
-#             return self.df
+# # #     def time_features(self):
+# # #         try:
+# # #             time_col = pd.to_datetime(self.df['TransactionStartTime'])
+# # #             self.df['TransactionHour']=time_col.dt.hour
+# # #             self.df['TransactionDay']=time_col.dt.day
+# # #             self.df['TransactionMonth']=time_col.dt.month
+# # #             self.df['TransactionYear']=time_col.dt.year
+# # #             logger.info('successfully completed')
+# # #             return self.df
 
-#         except Exception as e:
-#             logger.warning(f"Unexpected processing error: {e}")
-#             raise
+# # #         except Exception as e:
+# # #             logger.warning(f"Unexpected processing error: {e}")
+# # #             raise
 
-#     def category_encoding(self):
-#         try:
+# # #     def category_encoding(self):
+# # #         try:
 
-#             pass
-#         except Exception as e:
-#             logger.warning(f'the exception {e}')
-#             raise
+# # #             pass
+# # #         except Exception as e:
+# # #             logger.warning(f'the exception {e}')
+# # #             raise
 
+
+
+
+# # import pandas as pd
+# # from sklearn.base import BaseEstimator, TransformerMixin
+# # from xverse.transformer import WOE
+# # from sklearn.pipeline import Pipeline
+
+# # class TransactionAggregator(BaseEstimator, TransformerMixin):
+# #     def fit(self, X, y=None):
+# #         return self
+
+# #     def transform(self, X):
+# #         X = X.copy()
+# #         X['TotalTransactionAmount'] = X.groupby('CustomerId')['Amount'].transform('sum')
+# #         X['AverageTransactionAmount'] = X.groupby('CustomerId')['Amount'].transform('mean')
+# #         X['TransactionCount'] = X.groupby('CustomerId')['Amount'].transform('count')
+# #         X['TransactionVariability'] = X.groupby('CustomerId')['Amount'].transform('std')
+# #         return X
+
+# # class TimeFeatureExtractor(BaseEstimator, TransformerMixin):
+# #     def fit(self, X, y=None):
+# #         return self
+
+# #     def transform(self, X):
+# #         X = X.copy()
+# #         time_col = pd.to_datetime(X['TransactionStartTime'])
+# #         X['TransactionHour'] = time_col.dt.hour
+# #         X['TransactionDay'] = time_col.dt.day
+# #         X['TransactionMonth'] = time_col.dt.month
+# #         X['TransactionYear'] = time_col.dt.year
+# #         return X
+    
+# # class Encoder(BaseEstimator, TransformerMixin):
+# #     def __init__(self, columns):
+# #         self.columns = columns
+# #         self.encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+
+# #     def fit(self, X, y=None):
+# #         self.encoder.fit(X[self.columns])
+# #         return self
+    
+# #     def transform(self, X):
+# #         X = X.copy()
+# #         encoded_data = self.encoder.transform(X[self.columns])
+# #         encoded_df = pd.DataFrame(encoded_data, columns=self.encoder.get_feature_names_out(self.columns))
+# #         X = X.drop(columns=self.columns).reset_index(drop=True)
+# #         return pd.concat([X, encoded_df], axis=1)
+
+
+    
 
 
 
 import pandas as pd
+import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
-from xverse.transformer import WOE
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
+from sklearn.cluster import KMeans
+from xverse.transformer import WOE
 
-class TransactionAggregator(BaseEstimator, TransformerMixin):
+
+
+
+class RFMClusterer(BaseEstimator, TransformerMixin):
+    """Task 4: Creates is_high_risk using RFM + KMeans"""
+    def __init__(self, n_clusters=3, random_state=42):
+        self.n_clusters = n_clusters
+        self.random_state = random_state
+        self.kmeans = None
+        self.scaler = StandardScaler()
+        self.high_risk_cluster = None
+
     def fit(self, X, y=None):
+        rfm = X.groupby('CustomerId').agg({
+            'TransactionStartTime': 'max',     
+            'TransactionId': 'count',           
+            'Amount': 'sum'                     
+        }).reset_index()
+
+        rfm.columns = ['CustomerId', 'Recency', 'Frequency', 'Monetary']
+        rfm['Recency'] = (pd.to_datetime(X['TransactionStartTime']).max() - 
+                         pd.to_datetime(rfm['Recency'])).dt.days
+
+        rfm_scaled = self.scaler.fit_transform(rfm[['Recency', 'Frequency', 'Monetary']])
+        self.kmeans = KMeans(n_clusters=self.n_clusters, random_state=self.random_state)
+        self.kmeans.fit(rfm_scaled)
+
+        centers = pd.DataFrame(self.kmeans.cluster_centers_, 
+                             columns=['Recency', 'Frequency', 'Monetary'])
+        self.high_risk_cluster = centers['Frequency'].idxmin()
         return self
 
+    def transform(self, X):
+        X = X.copy()
+        rfm = X.groupby('CustomerId').agg({
+            'TransactionStartTime': 'max',
+            'TransactionId': 'count',
+            'Amount': 'sum'
+        }).reset_index()
+
+        rfm.columns = ['CustomerId', 'Recency', 'Frequency', 'Monetary']
+        rfm['Recency'] = (pd.to_datetime(X['TransactionStartTime']).max() - 
+                         pd.to_datetime(rfm['Recency'])).dt.days
+
+        rfm_scaled = self.scaler.transform(rfm[['Recency', 'Frequency', 'Monetary']])
+        clusters = self.kmeans.predict(rfm_scaled)
+        
+        rfm['is_high_risk'] = (clusters == self.high_risk_cluster).astype(int)
+        X = X.merge(rfm[['CustomerId', 'is_high_risk']], on='CustomerId', how='left')
+        return X
+
+
+class Aggregator(BaseEstimator, TransformerMixin):
+    """Task 3: Aggregate Features"""
+    def fit(self, X, y=None): 
+        return self
+    
     def transform(self, X):
         X = X.copy()
         X['TotalTransactionAmount'] = X.groupby('CustomerId')['Amount'].transform('sum')
@@ -61,33 +169,40 @@ class TransactionAggregator(BaseEstimator, TransformerMixin):
         X['TransactionVariability'] = X.groupby('CustomerId')['Amount'].transform('std')
         return X
 
-class TimeFeatureExtractor(BaseEstimator, TransformerMixin):
-    def fit(self, X, y=None):
-        return self
 
+class TimeFeatures(BaseEstimator, TransformerMixin):
+    """Task 3: Extract datetime features"""
+    def fit(self, X, y=None): 
+        return self
+    
     def transform(self, X):
         X = X.copy()
-        time_col = pd.to_datetime(X['TransactionStartTime'])
-        X['TransactionHour'] = time_col.dt.hour
-        X['TransactionDay'] = time_col.dt.day
-        X['TransactionMonth'] = time_col.dt.month
-        X['TransactionYear'] = time_col.dt.year
+        dt = pd.to_datetime(X['TransactionStartTime'])
+        X['TransactionHour'] = dt.dt.hour
+        X['TransactionDay'] = dt.dt.day
+        X['TransactionMonth'] = dt.dt.month
+        X['TransactionYear'] = dt.dt.year
+        X = X.drop(columns=['TransactionStartTime'], errors='ignore')
         return X
-    
+
+
 class Encoder(BaseEstimator, TransformerMixin):
+    """Task 3: One-Hot Encoding"""
     def __init__(self, columns):
         self.columns = columns
-        self.encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+        self.encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False, drop='first')
 
     def fit(self, X, y=None):
         self.encoder.fit(X[self.columns])
         return self
-    
+
     def transform(self, X):
         X = X.copy()
-        encoded_data = self.encoder.transform(X[self.columns])
-        encoded_df = pd.DataFrame(encoded_data, columns=self.encoder.get_feature_names_out(self.columns))
-        X = X.drop(columns=self.columns).reset_index(drop=True)
+        encoded = self.encoder.transform(X[self.columns])
+        encoded_df = pd.DataFrame(encoded, 
+                                  columns=self.encoder.get_feature_names_out(self.columns), 
+                                  index=X.index)
+        X = X.drop(columns=self.columns)
         return pd.concat([X, encoded_df], axis=1)
 
 class ColumnDropper(BaseEstimator, TransformerMixin):
@@ -104,30 +219,26 @@ class ColumnDropper(BaseEstimator, TransformerMixin):
         X = X.copy()
         return X.drop(columns=self.dropped_cols)
     
-class MissingValueImputer(BaseEstimator, TransformerMixin):
-    def __init__(self, num_cols, cat_cols, num_strategy='median', cat_strategy='most_frequent'):
+class Imputer(BaseEstimator, TransformerMixin):
+    """Task 3: Missing Value Handling"""
+    def __init__(self, num_cols, cat_cols):
         self.num_cols = num_cols
         self.cat_cols = cat_cols
-        self.num_strategy = num_strategy
-        self.cat_strategy = cat_strategy
-        self.num_si = SimpleImputer(strategy=self.num_strategy)
-        self.cat_si = SimpleImputer(strategy=self.cat_strategy)
+        self.num_imp = SimpleImputer(strategy='median')
+        self.cat_imp = SimpleImputer(strategy='most_frequent')
 
     def fit(self, X, y=None):
-        if self.num_cols:
-            self.num_si.fit(X[self.num_cols])
-        if self.cat_cols:
-            self.cat_si.fit(X[self.cat_cols])
+        if self.num_cols: self.num_imp.fit(X[self.num_cols])
+        if self.cat_cols: self.cat_imp.fit(X[self.cat_cols])
         return self
 
     def transform(self, X):
         X = X.copy()
-        if self.num_cols:
-            X[self.num_cols] = self.num_si.transform(X[self.num_cols])
-        if self.cat_cols:
-            X[self.cat_cols] = self.cat_si.transform(X[self.cat_cols])
+        if self.num_cols: X[self.num_cols] = self.num_imp.transform(X[self.num_cols])
+        if self.cat_cols: X[self.cat_cols] = self.cat_imp.transform(X[self.cat_cols])
         return X
-    
+
+
 class FeatureScaler(BaseEstimator, TransformerMixin):
     def __init__(self, num_cols, scaler=StandardScaler()):
         self.num_cols = num_cols
@@ -144,48 +255,76 @@ class FeatureScaler(BaseEstimator, TransformerMixin):
             X[self.num_cols] = self.scaler.transform(X[self.num_cols])
         return X
 
-class WoETransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, columns=None):
-        self.columns = columns
-        self.woe = WOE()
 
-    def fit(self, X, y):
-        existing_cols = [c for c in self.columns if c in X.columns]
-        X_subset = X[existing_cols].apply(pd.to_numeric, errors='coerce').fillna(0)
-        self.woe.fit(X_subset, y)
+class WoETransformer(BaseEstimator, TransformerMixin):
+    """Task 3: WoE Transformation + IV Calculation"""
+    def __init__(self, columns):
+        self.columns = columns
+        self.woe_maps = {}
+        self.iv_values = {}
+
+    def fit(self, X, y=None):
+        y = pd.Series(y)
+        total_good = (y == 0).sum()
+        total_bad = (y == 1).sum()
+        
+        for col in self.columns:
+            if col not in X.columns: continue
+            data = pd.DataFrame({'val': X[col], 'target': y})
+            data['bin'] = pd.qcut(data['val'], q=10, duplicates='drop')
+            group = data.groupby('bin')['target'].agg(['sum', 'count'])
+            group['bad'] = group['sum']
+            group['good'] = group['count'] - group['bad']
+            group['woe'] = np.log(((group['good'] + 0.5) / total_good) / 
+                                  ((group['bad'] + 0.5) / total_bad))
+            
+            group['iv'] = ((group['good'] / total_good) - (group['bad'] / total_bad)) * group['woe']
+            
+            self.woe_maps[col] = group[['woe']]
+            self.iv_values[col] = group['iv'].sum()
+            
+        print(f"Feature IVs: {self.iv_values}") 
         return self
 
     def transform(self, X):
-        existing_cols = [c for c in self.columns if c in X.columns]
-        X_subset = X[existing_cols].apply(pd.to_numeric, errors='coerce').fillna(0)
-        return self.woe.transform(X_subset)
+        X = X.copy()
+        for col in self.columns:
+            if col in self.woe_maps:
+                bins = pd.qcut(X[col], q=10, duplicates='drop')
+                X[col] = bins.map(self.woe_maps[col]['woe'])
+        return X
 
-columns=[
-       'CurrencyCode',
-       'ProductCategory', 'ChannelId', 'Amount', 'Value',
-       'TransactionStartTime', 'PricingStrategy',
-       'TotalTransactionAmount', 'AverageTransactionAmount',
-       'TransactionCount', 'TransactionVariability', 'TransactionHour',
-       'TransactionDay', 'TransactionMonth', 'TransactionYear']
 
-num_features=['AverageTransactionAmount', 'TotalTransactionAmount', 'Amount', 'Value', 'TransactionCount','TransactionVariability',
-               'PricingStrategy', ]
-cat_features=['CurrencyCode', 'CountryCode', 'ProviderId', 'ProductId',
-       'ProductCategory', 'ChannelId' ]
+def get_full_pipeline():
+    """Returns a fitted pipeline that produces model-ready data"""
+    
+    num_cols = ['Amount', 'Value', 'TotalTransactionAmount', 'AverageTransactionAmount',
+                'TransactionCount', 'TransactionVariability', 'TransactionHour',
+                'TransactionDay', 'TransactionMonth', 'TransactionYear']
 
-woe_features = [
-    'Amount', 'Value', 'PricingStrategy', 
-    'TotalTransactionAmount', 'AverageTransactionAmount',
-    'TransactionCount', 'TransactionVariability', 'TransactionHour',
-    'TransactionDay', 'TransactionMonth', 'TransactionYear'
-]
+    cat_cols = ['ProductCategory', 'ChannelId', 'PricingStrategy']
 
-pipeline = Pipeline([
-    ('dropper', ColumnDropper(threshold=0.7)),
-    ('aggregator', TransactionAggregator()),
-    ('time_extractor', TimeFeatureExtractor()),
-    ('imputer', MissingValueImputer(num_cols=num_features, cat_cols=cat_features)),
-    ('encoder', Encoder(columns=['ProductCategory', 'ChannelId'])), # Run this BEFORE WoE
-    ('processor', FeatureScaler(num_cols=num_features, scaler=StandardScaler())),
-    ('woe', WoETransformer(columns=woe_features)) # Now X is purely numeric
-])
+    woe_cols = num_cols + ['PricingStrategy']
+
+    pipeline = Pipeline([
+        ('rfm_cluster', RFMClusterer(n_clusters=3, random_state=42)),   # Task 4
+        ('aggregator', Aggregator()),                                   
+        ('time_features', TimeFeatures()),                              
+        ('imputer', Imputer(num_cols=num_cols, cat_cols=cat_cols)),     
+        ('encoder', Encoder(columns=cat_cols)),                         
+        ('scaler', FeatureScaler(num_cols=num_cols, scaler=StandardScaler())), 
+        ('woe_transformer', WoETransformer(columns=woe_cols))                         
+    ])
+
+    return pipeline, woe_cols
+
+
+def process_data(df: pd.DataFrame):
+    """Main function: Returns model-ready X and y"""
+    pipeline, woe_cols = get_full_pipeline()
+    rfm_preprocessor = RFMClusterer()
+    X_rfm = rfm_preprocessor.fit_transform(df)
+    y = X_rfm['is_high_risk']
+    X_final = pipeline.fit_transform(X_rfm, y)
+    
+    return X_final, y
