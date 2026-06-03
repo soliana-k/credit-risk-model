@@ -39,7 +39,7 @@ manager = ModelManager()
 
 @app.on_event("startup")
 async def load_model():
-    global model, model_info
+    global model_info
     try:
        
         logging.info(f"Loading model: {MODEL_NAME} version {MODEL_VERSION}")
@@ -82,7 +82,7 @@ async def health():
     return {
         "status": "healthy",
         "model_loaded": manager.model is not None,
-        
+        "model_info": model_info
     }
 
 
@@ -149,7 +149,7 @@ async def predict(input_data: CreditRiskInput):
     
 @app.post("/predict/batch")
 async def predict_batch(inputs: List[CreditRiskInput]):
-    if model is None:
+    if manager.model is None:
         raise HTTPException(status_code=503, detail="Model not loaded.")
     
     results = []
