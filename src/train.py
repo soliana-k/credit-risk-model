@@ -10,6 +10,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier
 from mlflow.tracking import MlflowClient
+import joblib
+import os
 
 
 mlflow.set_tracking_uri("http://127.0.0.1:5000")
@@ -65,6 +67,7 @@ class ModelTrainer:
                     self.best_f1 = metrics["f1"]
                     self.best_run_id = run.info.run_id
                     self.best_model_name = name
+                    self.best_estimator = grid.best_estimator_
                 
                 logging.info(f"{name} metrics: {metrics}")
 
@@ -97,6 +100,12 @@ if __name__ == '__main__':
     }
         trainer.run_training(X, y, models)
         trainer.register_best_model()
+        os.makedirs('models', exist_ok=True)
+        joblib.dump(trainer.best_model_name, 'models/best_model.pkl')
+        print("Model saved to models/best_model.pkl")
+    
+        importances = pd.Series(trainer.best_estimator.feature_importances_, index=X.columns)
+        print(importances.nlargest(10))
         logging.info("Training process completed successfully.")
         
     except Exception as e:

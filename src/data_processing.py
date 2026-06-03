@@ -7,6 +7,8 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.cluster import KMeans
 from typing import List, Optional
+import os
+import joblib
 
 logging.basicConfig(
     level=logging.INFO,
@@ -335,7 +337,8 @@ def process_data(df: pd.DataFrame):
         logger.info("Applying feature engineering pipeline...")
         feature_pipeline = get_data_pipeline()
         X_final = feature_pipeline.fit_transform(X, y)
-        
+        os.makedirs('models', exist_ok=True)
+        joblib.dump(feature_pipeline, 'models/preprocessor.pkl')
         logger.info(f"Processing completed successfully. Final shape: {X_final.shape}")
         
         return X_final, y
