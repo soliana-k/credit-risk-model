@@ -30,7 +30,7 @@ app.add_middleware(
 )
 
 
-model_info = {}
+
 class ModelManager:
     model = None
     preprocessor = None
@@ -82,7 +82,7 @@ async def health():
     return {
         "status": "healthy",
         "model_loaded": manager.model is not None,
-        "model_info": model_info
+        
     }
 
 
