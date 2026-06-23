@@ -129,17 +129,41 @@ async def predict(input_data: CreditRiskInput):
         raise HTTPException(status_code=400, detail=f"Data processing error: {str(e)}")
     
 
-@app.post("/predict/batch")
-async def predict_batch(inputs: List[CreditRiskInput]):
-    if manager.model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded.")
-    
-    results = []
-    for inp in inputs:
-        result = await predict(inp)
-        results.append(result)
-    return results
 
+@app.post("/predict/batch", response_model=List[PredictionResponse])
+async def predict_batch(inputs: List[CreditRiskInput]):
+    if manager.model is None or manager.preprocessor is None:
+        raise HTTPException(status_code=503, detail="Assets not initialized")
+    
+    try:
+        
+        df_batch = pd.DataFrame([i.model_dump() for i in inputs])
+        processed_data = manager.preprocessor.transform(df_batch)
+        
+        if not isinstance(processed_data, pd.DataFrame):
+            processed_data = pd.DataFrame(processed_data)
+        
+        processed_data = processed_data.apply(pd.to_numeric, errors='coerce').fillna(0)
+        final_df = processed_data.reindex(columns=manager.model.feature_names_in_, fill_value=0)
+        
+        probs = manager.model.predict_proba(final_df)[:, 1]
+        
+        
+        responses = []
+        for prob in probs:
+            risk_level, recommendation = get_risk_level(prob)
+            responses.append(PredictionResponse(
+                probability_of_default=round(float(prob), 4),
+                risk_level=risk_level,
+                recommendation=recommendation,
+                model_used=MODEL_NAME
+            ))
+        
+        return responses
+
+    except Exception as e:
+        logging.error(f"Batch prediction error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
