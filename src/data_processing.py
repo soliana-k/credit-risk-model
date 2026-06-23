@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 NUM_COLS = [
-    'Amount', 'Value', 'TotalTransactionAmount', 'AverageTransactionAmount',
+    'Amount', 'TotalTransactionAmount', 'AverageTransactionAmount',
     'TransactionCount', 'TransactionVariability', 'TransactionHour',
     'TransactionDay', 'TransactionMonth', 'TransactionYear'
 ]

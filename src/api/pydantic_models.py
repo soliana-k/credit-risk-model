@@ -1,24 +1,24 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 
 class CreditRiskInput(BaseModel):
     TransactionMonth: int
     TransactionCount: int
-    TransactionStartTime: Optional[str] = "2026-06-03 00:00:00"
-    Amount: Optional[float] = 0.0
-    Value: Optional[float] = 0.0
-    TotalTransactionAmount: Optional[float] = 0.0
-    AverageTransactionAmount: Optional[float] = 0.0
-    TransactionVariability: Optional[float] = 0.0
-    TransactionHour: Optional[int] = 12
-    TransactionDay: Optional[int] = 1
-    TransactionYear: Optional[int] = 2026
-    ProductCategory: Optional[str] = "Unknown"
-    ChannelId: Optional[str] = "Unknown"
-    PricingStrategy: Optional[int] = 1
-    CurrencyCode: Optional[str] = "Unknown"
-    ProviderId: Optional[str] = "Unknown"
-    ProductId: Optional[str] = "Unknown"
+    TransactionStartTime: str
+    Amount: float
+    #Value: float
+    TotalTransactionAmount: float
+    AverageTransactionAmount: float
+    TransactionVariability: float
+    TransactionHour: int
+    TransactionDay: int
+    TransactionYear: int
+    ProductCategory: str
+    ChannelId: str
+    PricingStrategy: int
+    CurrencyCode: str
+    ProviderId: str
+    ProductId: str
     CustomerId: str
    
 

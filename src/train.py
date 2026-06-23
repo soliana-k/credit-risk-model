@@ -93,7 +93,7 @@ if __name__ == '__main__':
         trainer = ModelTrainer()
         ratio = (len(y) - sum(y)) / sum(y)
         models = {
-        "LogisticRegression": (LogisticRegression(class_weight='balanced'), {'C': [0.1, 1]}),
+        "LogisticRegression": (LogisticRegression(class_weight='balanced', max_iter=5000), {'C': [0.1, 1]}),
         "DecisionTree": (DecisionTreeClassifier(class_weight='balanced'), {'max_depth': [5, 10]}),
         "RandomForest": (RandomForestClassifier(class_weight='balanced'), {'n_estimators': [100], 'max_depth': [5, 10]}),
         "XGBoost": (XGBClassifier(scale_pos_weight=ratio), {'learning_rate': [0.1], 'n_estimators': [100]})

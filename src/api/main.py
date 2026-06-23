@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+import numpy as np
 import joblib
 import mlflow
 import mlflow.sklearn
@@ -43,7 +44,9 @@ async def load_model():
     try:
        
         logging.info(f"Loading model: {MODEL_NAME} version {MODEL_VERSION}")
+        print(f"DEBUG: Type of model is {type(manager.model)}")
         manager.model = mlflow.sklearn.load_model(f"models:/{MODEL_NAME}/{MODEL_VERSION}")
+        print(f"DEBUG: Type of model is {type(manager.model)}")
         
         
         client = mlflow.MlflowClient()
@@ -92,48 +95,25 @@ async def predict(input_data: CreditRiskInput):
         raise HTTPException(status_code=503, detail="Assets not initialized")
 
     try:
-        data_dict = input_data.model_dump()
         
-       
-        expected_cols = [
-            'Amount', 'Value', 'TotalTransactionAmount', 'AverageTransactionAmount', 
-            'TransactionCount', 'TransactionVariability', 'TransactionHour', 
-            'TransactionDay', 'TransactionMonth', 'TransactionYear', 
-            'ProductCategory', 'ChannelId', 'PricingStrategy', 'CurrencyCode', 
-            'ProviderId', 'ProductId', 'CustomerId'
-        ]
+        df_single = pd.DataFrame([input_data.model_dump()])
         
+        dummy_row = df_single.copy()
+        dummy_row['CustomerId'] = 'DUMMY_ID' 
         
-        for col in expected_cols:
-            if col not in data_dict or data_dict.get(col) is None:
-                if "Id" in col or "Code" in col or "Category" in col:
-                    data_dict[col] = "Unknown"
-                else:
-                    data_dict[col] = 0.0 
+        df_batch = pd.concat([df_single, dummy_row], axis=0)
+        processed_batch = manager.preprocessor.transform(df_batch)
 
+        expected_features = manager.model.feature_names_in_
+        if isinstance(processed_batch, np.ndarray):
+            processed_data = processed_batch[[0], :]
+        else:
+            processed_data = processed_batch.iloc[[0]]
         
-        df = pd.DataFrame([data_dict])
-
-        
-        processed_data = manager.preprocessor.transform(df)
-        model_features = manager.model.feature_names_in_
-        processed_data = pd.DataFrame(processed_data, columns=model_features)
-    
         processed_data = processed_data.apply(pd.to_numeric, errors='coerce').fillna(0)
-        
-        
-         
-        
-        if 'FraudResult' not in processed_data.columns:
-            processed_data['FraudResult'] = 0
-            
-        processed_data = processed_data[model_features]
-        processed_data = processed_data.reindex(
-    columns=manager.model.feature_names_in_,
-    fill_value=0
-)
-        
-        prob = manager.model.predict_proba(processed_data)[0][1]
+        final_df = processed_data.reindex(columns=expected_features, fill_value=0)
+
+        prob = manager.model.predict_proba(final_df)[0][1]
         risk_level, recommendation = get_risk_level(prob)
 
         return PredictionResponse(
@@ -145,8 +125,10 @@ async def predict(input_data: CreditRiskInput):
 
     except Exception as e:
         logging.error(f"Prediction error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+       
+        raise HTTPException(status_code=400, detail=f"Data processing error: {str(e)}")
     
+
 @app.post("/predict/batch")
 async def predict_batch(inputs: List[CreditRiskInput]):
     if manager.model is None:
